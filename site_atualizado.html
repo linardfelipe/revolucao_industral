@@ -1,0 +1,2363 @@
+<!doctype html>
+<html lang="pt-BR">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Missão Industrial</title>
+  <script src="/_sdk/data_sdk.js"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #8B4513 0%, #D2691E 100%);
+      color: #2d3748;
+      overflow-x: hidden;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 12px;
+      min-height: 100%;
+    }
+
+    /* Header */
+    header {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 16px 24px;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+      margin-bottom: 16px;
+      backdrop-filter: blur(10px);
+    }
+
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .logo-section {
+      cursor: pointer;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .factory-illustration {
+      flex-shrink: 0;
+    }
+
+    .logo-section h1 {
+      font-size: 24px;
+      color: #8B4513;
+      margin-bottom: 2px;
+    }
+
+    .logo-section p {
+      color: #718096;
+      font-size: 12px;
+    }
+
+    .back-btn {
+      padding: 10px 20px;
+      background: linear-gradient(135deg, #8B4513 0%, #D2691E 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: none;
+    }
+
+    .back-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(139, 69, 19, 0.4);
+    }
+
+    .progress-section {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+    }
+
+    .stat-box {
+      text-align: center;
+      padding: 10px 16px;
+      background: linear-gradient(135deg, #8B4513 0%, #D2691E 100%);
+      border-radius: 10px;
+      color: white;
+    }
+
+    .stat-box .label {
+      font-size: 11px;
+      opacity: 0.9;
+      margin-bottom: 2px;
+    }
+
+    .stat-box .value {
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    /* Main Content */
+    .content-area {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+      margin-bottom: 16px;
+    }
+
+    .page {
+      display: none;
+    }
+
+    .page.active {
+      display: block;
+      animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Home Page - Module Selection */
+    .modules-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px;
+      margin-top: 20px;
+    }
+
+    .module-card {
+      background: linear-gradient(135deg, #FFF8DC 0%, #FFE4B5 100%);
+      padding: 16px;
+      border-radius: 10px;
+      border: 2px solid #D2691E;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .module-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: linear-gradient(135deg, #8B4513 0%, #D2691E 100%);
+      transform: scaleX(0);
+      transition: transform 0.3s ease;
+    }
+
+    .module-card:hover:not(.locked) {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(139, 69, 19, 0.3);
+      border-color: #8B4513;
+    }
+
+    .module-card:hover:not(.locked)::before {
+      transform: scaleX(1);
+    }
+
+    .module-card.locked {
+      opacity: 0.6;
+      cursor: not-allowed;
+      background: #f1f3f5;
+    }
+
+    .module-card.locked:hover {
+      transform: none;
+    }
+
+    .module-icon {
+      font-size: 36px;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .module-number {
+      font-size: 11px;
+      font-weight: bold;
+      color: #8B4513;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .module-title {
+      font-size: 16px;
+      font-weight: bold;
+      color: #2d3748;
+      margin-bottom: 4px;
+      line-height: 1.2;
+    }
+
+    .module-description {
+      font-size: 12px;
+      color: #718096;
+      line-height: 1.4;
+      margin-bottom: 8px;
+    }
+
+    .module-status {
+      display: inline-block;
+      padding: 4px 10px;
+      background: rgba(139, 69, 19, 0.1);
+      color: #8B4513;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-top: 6px;
+    }
+
+    .module-card.locked .module-status {
+      background: #e2e8f0;
+      color: #a0aec0;
+    }
+
+    /* Welcome Section */
+    .welcome-hero {
+      text-align: center;
+      padding: 20px 16px;
+    }
+
+    .welcome-hero h2 {
+      font-size: 26px;
+      color: #8B4513;
+      margin-bottom: 10px;
+    }
+
+    .welcome-hero p {
+      font-size: 14px;
+      color: #4a5568;
+      line-height: 1.5;
+      margin-bottom: 12px;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .methodology-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .method-card {
+      background: linear-gradient(135deg, #FFF8DC 0%, #FFE4B5 100%);
+      padding: 16px;
+      border-radius: 10px;
+      text-align: center;
+      transition: transform 0.3s ease;
+      border: 2px solid #D2691E;
+    }
+
+    .method-card:hover {
+      transform: translateY(-3px);
+    }
+
+    .method-card .icon {
+      font-size: 36px;
+      margin-bottom: 8px;
+    }
+
+    .method-card h3 {
+      color: #8B4513;
+      margin-bottom: 6px;
+      font-size: 16px;
+    }
+
+    .method-card p {
+      color: #718096;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    /* Module Content */
+    .module-header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid #8B4513;
+    }
+
+    .module-header h2 {
+      font-size: 24px;
+      color: #8B4513;
+      margin-bottom: 8px;
+    }
+
+    .module-header p {
+      font-size: 13px;
+      color: #718096;
+    }
+
+    /* Video Section */
+    .video-container {
+      margin: 20px 0;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Interactive Map */
+    .map-container {
+      margin: 20px 0;
+      background: #FFF8DC;
+      border-radius: 10px;
+      padding: 16px;
+      border: 2px solid #D2691E;
+    }
+
+    .map-placeholder {
+      background: linear-gradient(135deg, #FFE4B5 0%, #FFDAB9 100%);
+      height: 350px;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .map-marker {
+      position: absolute;
+      width: 36px;
+      height: 36px;
+      background: #8B4513;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 18px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 3px 10px rgba(139, 69, 19, 0.4);
+    }
+
+    .map-marker:hover {
+      transform: scale(1.2);
+      box-shadow: 0 5px 14px rgba(139, 69, 19, 0.6);
+    }
+
+    /* Infographic */
+    .infographic {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin: 20px 0;
+    }
+
+    .info-card {
+      background: linear-gradient(135deg, #FFF8DC 0%, #FFE4B5 100%);
+      padding: 16px;
+      border-radius: 10px;
+      text-align: center;
+      border-left: 3px solid #8B4513;
+      transition: all 0.3s ease;
+    }
+
+    .info-card:hover {
+      transform: translateX(3px);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    }
+
+    .info-card .number {
+      font-size: 28px;
+      font-weight: bold;
+      color: #8B4513;
+      margin-bottom: 6px;
+    }
+
+    .info-card .label {
+      font-size: 12px;
+      color: #4a5568;
+      font-weight: 600;
+    }
+
+    /* Quiz Section */
+    .quiz-container {
+      margin: 20px 0;
+    }
+
+    .question-card {
+      background: #f7fafc;
+      padding: 24px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      border-left: 4px solid #667eea;
+    }
+
+    .question-card h3 {
+      color: #2d3748;
+      margin-bottom: 16px;
+      font-size: 18px;
+    }
+
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .option-btn {
+      padding: 16px;
+      background: white;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 15px;
+      color: #4a5568;
+    }
+
+    .option-btn:hover {
+      border-color: #667eea;
+      background: #f0f4ff;
+      transform: translateX(5px);
+    }
+
+    .option-btn.selected {
+      border-color: #667eea;
+      background: #e0e7ff;
+      font-weight: 600;
+    }
+
+    .option-btn.correct {
+      border-color: #48bb78;
+      background: #c6f6d5;
+      color: #22543d;
+    }
+
+    .option-btn.incorrect {
+      border-color: #f56565;
+      background: #fed7d7;
+      color: #742a2a;
+    }
+
+    .submit-quiz-btn {
+      padding: 14px 32px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 16px;
+      transition: all 0.3s ease;
+    }
+
+    .submit-quiz-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .submit-quiz-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Results */
+    .results-container {
+      background: linear-gradient(135deg, #f6f8fb 0%, #e9ecef 100%);
+      padding: 32px;
+      border-radius: 12px;
+      text-align: center;
+      margin-top: 24px;
+    }
+
+    .results-container h3 {
+      font-size: 28px;
+      color: #667eea;
+      margin-bottom: 16px;
+    }
+
+    .score-display {
+      font-size: 48px;
+      font-weight: bold;
+      color: #764ba2;
+      margin: 20px 0;
+    }
+
+    .medal {
+      font-size: 80px;
+      margin: 20px 0;
+      animation: bounce 1s ease infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    .next-module-btn {
+      padding: 14px 32px;
+      background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 16px;
+      transition: all 0.3s ease;
+    }
+
+    .next-module-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(72, 187, 120, 0.4);
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #2d3748;
+      color: white;
+      padding: 16px 24px;
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      display: none;
+      z-index: 1000;
+      animation: slideIn 0.3s ease;
+    }
+
+    /* Visit Counter */
+    .visit-counter {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: linear-gradient(135deg, #8B4513 0%, #D2691E 100%);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 50px;
+      font-size: 14px;
+      font-weight: bold;
+      box-shadow: 0 6px 20px rgba(139, 69, 19, 0.4);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 999;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      backdrop-filter: blur(10px);
+    }
+
+    .visit-counter span {
+      font-size: 18px;
+      font-weight: bold;
+      min-width: 40px;
+      text-align: center;
+    }
+
+    .toast.show {
+      display: block;
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(400px); }
+      to { transform: translateX(0); }
+    }
+
+    /* Medal Display */
+    .medal-display {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 20px;
+      margin-top: 24px;
+    }
+
+    .medal-item {
+      background: linear-gradient(135deg, #f6f8fb 0%, #e9ecef 100%);
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+      transition: all 0.3s ease;
+      border: 2px solid #e2e8f0;
+      opacity: 0.4;
+      filter: grayscale(100%);
+    }
+
+    .medal-item.unlocked {
+      opacity: 1;
+      filter: grayscale(0%);
+      border-color: #667eea;
+      box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+      animation: medalUnlock 0.6s ease;
+    }
+
+    @keyframes medalUnlock {
+      0% { transform: scale(0.8) rotate(-10deg); opacity: 0; }
+      50% { transform: scale(1.1) rotate(5deg); }
+      100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+
+    .medal-item:hover.unlocked {
+      transform: translateY(-5px) scale(1.05);
+      box-shadow: 0 12px 32px rgba(102, 126, 234, 0.4);
+    }
+
+    .medal-icon-container {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 12px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+    }
+
+    .medal-item.unlocked .medal-icon-container {
+      animation: pulse 2s ease infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .medal-icon {
+      font-size: 40px;
+    }
+
+    .medal-name {
+      font-weight: bold;
+      color: #2d3748;
+      margin-bottom: 4px;
+      font-size: 14px;
+    }
+
+    .medal-description {
+      font-size: 12px;
+      color: #718096;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .header-content {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .logo-container {
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .progress-section {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .logo-section h1 {
+        font-size: 24px;
+      }
+
+      .welcome-hero h2 {
+        font-size: 28px;
+      }
+
+      .map-placeholder {
+        height: 250px;
+      }
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
+  <script src="https://cdn.tailwindcss.com/3.4.17" type="text/javascript"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js" type="text/javascript"></script>
+ </head>
+ <body>
+  <div class="container"><!-- Header -->
+   <header>
+    <div class="header-content">
+     <div class="logo-section" onclick="goToHome()">
+      <div class="logo-container">
+       <svg class="factory-illustration" width="80" height="80" viewbox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><!-- Factory Building --> <rect x="40" y="80" width="120" height="100" fill="#8B4513" stroke="#654321" stroke-width="3" /> <!-- Windows --> <rect x="55" y="95" width="20" height="25" fill="#FFD700" opacity="0.8" /> <rect x="90" y="95" width="20" height="25" fill="#FFD700" opacity="0.8" /> <rect x="125" y="95" width="20" height="25" fill="#FFD700" opacity="0.8" /> <rect x="55" y="135" width="20" height="25" fill="#FFD700" opacity="0.8" /> <rect x="90" y="135" width="20" height="25" fill="#FFD700" opacity="0.8" /> <rect x="125" y="135" width="20" height="25" fill="#FFD700" opacity="0.8" /> <!-- Door --> <rect x="85" y="150" width="30" height="30" fill="#654321" stroke="#4a2f1a" stroke-width="2" /> <!-- Chimney 1 --> <rect x="60" y="30" width="20" height="50" fill="#8B4513" stroke="#654321" stroke-width="2" /> <rect x="57" y="25" width="26" height="8" fill="#654321" /> <!-- Chimney 2 --> <rect x="120" y="40" width="20" height="40" fill="#8B4513" stroke="#654321" stroke-width="2" /> <rect x="117" y="35" width="26" height="8" fill="#654321" /> <!-- Smoke from chimneys (animated) --> <ellipse cx="70" cy="20" rx="8" ry="6" fill="#A9A9A9" opacity="0.6">
+         <animate attributename="cy" values="20;10;20" dur="3s" repeatcount="indefinite" />
+         <animate attributename="opacity" values="0.6;0.2;0.6" dur="3s" repeatcount="indefinite" />
+        </ellipse> <ellipse cx="75" cy="15" rx="10" ry="7" fill="#A9A9A9" opacity="0.5">
+         <animate attributename="cy" values="15;5;15" dur="3.5s" repeatcount="indefinite" />
+         <animate attributename="opacity" values="0.5;0.1;0.5" dur="3.5s" repeatcount="indefinite" />
+        </ellipse> <ellipse cx="130" cy="28" rx="8" ry="6" fill="#A9A9A9" opacity="0.6">
+         <animate attributename="cy" values="28;18;28" dur="2.8s" repeatcount="indefinite" />
+         <animate attributename="opacity" values="0.6;0.2;0.6" dur="2.8s" repeatcount="indefinite" />
+        </ellipse> <ellipse cx="135" cy="23" rx="10" ry="7" fill="#A9A9A9" opacity="0.5">
+         <animate attributename="cy" values="23;13;23" dur="3.2s" repeatcount="indefinite" />
+         <animate attributename="opacity" values="0.5;0.1;0.5" dur="3.2s" repeatcount="indefinite" />
+        </ellipse> <!-- Gear decoration --> <circle cx="100" cy="50" r="15" fill="#FFD700" stroke="#DAA520" stroke-width="2" /> <circle cx="100" cy="50" r="8" fill="#8B4513" /> <line x1="100" y1="35" x2="100" y2="42" stroke="#DAA520" stroke-width="3" /> <line x1="100" y1="58" x2="100" y2="65" stroke="#DAA520" stroke-width="3" /> <line x1="85" y1="50" x2="92" y2="50" stroke="#DAA520" stroke-width="3" /> <line x1="108" y1="50" x2="115" y2="50" stroke="#DAA520" stroke-width="3" /> <!-- Ground --> <rect x="0" y="180" width="200" height="20" fill="#654321" />
+       </svg>
+       <div>
+        <h1 id="siteTitle" style="font-size: 32px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; text-align: center;">🎯 MISSÃO INDUSTRIAL</h1>
+        <p id="siteSubtitle">Recurso Educacional Interativo</p>
+       </div>
+      </div>
+     </div><button class="back-btn" id="backBtn" onclick="goToHome()">⬅️ Voltar ao Início</button>
+    </div>
+   </header><!-- Content Area -->
+   <main class="content-area"><!-- Home Page -->
+    <div id="homePage" class="page active">
+     <div class="welcome-hero">
+      <h2 id="welcomeMessage">Bem-vindo à Missão Industrial! 🚀</h2>
+      <p style="color: #4a5568; font-size: 15px; line-height: 1.6; margin-top: 12px; max-width: 700px; margin-left: auto; margin-right: auto; font-weight: 500;">🎯 Prepare-se para uma aventura épica através do tempo! Você está prestes a embarcar em uma jornada fascinante pelas revoluções que transformaram o mundo. Desbloqueie módulos, ganhe medalhas, complete desafios e descubra como as máquinas a vapor, a eletricidade e a tecnologia digital mudaram a história da humanidade! Vamos lá, explorador? 🏭✨</p>
+     </div>
+     <h3 style="color: #8B4513; font-size: 22px; margin-top: 24px; margin-bottom: 20px; text-align: center; font-weight: bold;">📚 Selecione um Módulo</h3>
+     <div class="modules-grid">
+      <div class="module-card" onclick="openModule('module1')"><span class="module-icon">🏭</span>
+       <div class="module-number">
+        Módulo 1
+       </div>
+       <div class="module-title">
+        Revolução Industrial
+       </div>
+       <div class="module-description">
+        Mecanização do trabalho, urbanização e novas relações de produção
+       </div><span class="module-status">Disponível</span>
+      </div>
+      <div class="module-card" onclick="openModule('module2')"><span class="module-icon">⚡</span>
+       <div class="module-number">
+        Módulo 2
+       </div>
+       <div class="module-title">
+        Revolução Tecnológica
+       </div>
+       <div class="module-description">
+        Eletricidade, petróleo e produção em massa
+       </div><span class="module-status">Disponível</span>
+      </div>
+      <div class="module-card" onclick="openModule('module3')"><span class="module-icon">💻</span>
+       <div class="module-number">
+        Módulo 3
+       </div>
+       <div class="module-title">
+        Revolução Digital
+       </div>
+       <div class="module-description">
+        Computadores, internet e transformação digital
+       </div><span class="module-status">Disponível</span>
+      </div>
+      <div class="module-card" onclick="openModule('module4')"><span class="module-icon">🤖</span>
+       <div class="module-number">
+        Módulo 4
+       </div>
+       <div class="module-title">
+        Revolução 4.0
+       </div>
+       <div class="module-description">
+        Inteligência artificial, IoT e automação inteligente
+       </div><span class="module-status">Disponível</span>
+      </div>
+      <div class="module-card" onclick="openModule('module5')"><span class="module-icon">🌐</span>
+       <div class="module-number">
+        Módulo 5
+       </div>
+       <div class="module-title">
+        Revolução 5.0
+       </div>
+       <div class="module-description">
+        Sociedade 5.0, sustentabilidade e bem-estar humano
+       </div><span class="module-status">🔒 Bloqueado</span>
+      </div>
+      <div class="module-card locked" onclick="openGamePage()"><span class="module-icon">��</span>
+       <div class="module-number">
+        Jogo Final
+       </div>
+       <div class="module-title">
+        Industrial Run Quiz
+       </div>
+       <div class="module-description">
+        Teste seus conhecimentos em um jogo interativo!
+       </div><span class="module-status">🔒 Bloqueado</span>
+      </div>
+     </div><!-- Separator -->
+     <div style="margin: 40px 0; border-top: 3px solid #D2691E; position: relative;">
+      <div style="position: absolute; top: -15px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #8B4513 0%, #D2691E 100%); color: white; padding: 6px 20px; border-radius: 20px; font-size: 20px; font-weight: bold; box-shadow: 0 4px 12px rgba(139, 69, 19, 0.3);">
+       ⚙️
+      </div>
+     </div><!-- Para Saber Mais Section -->
+     <div style="margin: 48px 0;">
+      <h3 style="color: #8B4513; font-size: 24px; margin-bottom: 16px; text-align: center; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">📖 Para Saber Mais</h3>
+      <p style="text-align: center; color: #4a5568; font-size: 14px; line-height: 1.6; margin-bottom: 16px; max-width: 800px; margin-left: auto; margin-right: auto;">O recurso foi estruturado com base nos princípios das metodologias ativas, da gamificação e do ensino híbrido, permitindo que os alunos se tornem protagonistas no processo de aprendizagem.</p>
+      <p style="text-align: center; color: #4a5568; font-size: 14px; line-height: 1.6; margin-bottom: 24px; max-width: 800px; margin-left: auto; margin-right: auto;">A proposta integra desafios, missões, quizzes, narrativas interativas e atividades colaborativas que estimulam raciocínio crítico, resolução de problemas e conexão entre conteúdos históricos e geográficos.</p>
+      <div class="methodology-grid">
+       <div class="method-card">
+        <div class="icon">
+         🎯
+        </div>
+        <h3>Metodologias Ativas</h3>
+        <p>Aprendizagem centrada no estudante com protagonismo e autonomia</p>
+       </div>
+       <div class="method-card">
+        <div class="icon">
+         🎮
+        </div>
+        <h3>Gamificação</h3>
+        <p>Pontos, medalhas e desafios para engajamento contínuo</p>
+       </div>
+       <div class="method-card">
+        <div class="icon">
+         💻
+        </div>
+        <h3>Ensino Híbrido</h3>
+        <p>Integração de recursos digitais e atividades colaborativas</p>
+       </div>
+       <div class="method-card">
+        <div class="icon">
+         🌍
+        </div>
+        <h3>Interdisciplinaridade</h3>
+        <p>Conexão entre História, Geografia e Tecnologia</p>
+       </div>
+      </div>
+     </div><!-- Footer Section -->
+     <footer style="margin-top: 32px; padding: 16px 20px; background: linear-gradient(135deg, #f6f8fb 0%, #e9ecef 100%); border-radius: 8px; border-top: 2px solid #D2691E;">
+      <div style="max-width: 700px; margin: 0 auto; text-align: center;"><!-- Academic Info -->
+       <div style="margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0;">
+        <p style="color: #8B4513; font-weight: bold; font-size: 10px; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.3px;">📚 Trabalho de Conclusão de Curso</p>
+        <p style="color: #2d3748; font-size: 11px; line-height: 1.4; margin: 0;">Recurso Educacional criado para o TCC da <strong>Coordenadoria de Desenvolvimento Profissional e Práticas Pedagógicas - Professora Adriana Chaves</strong><br><strong style="color: #8B4513;">UNIVERSIDADE ESTADUAL PAULISTA "JÚLIO DE MESQUITA FILHO" - UNESP</strong></p>
+       </div><!-- Creators Section -->
+       <div style="margin-bottom: 10px;">
+        <p style="color: #8B4513; font-weight: bold; font-size: 10px; margin-bottom: 4px;">👥 Criadores do Projeto</p>
+        <p style="color: #2d3748; font-size: 11px; margin: 0;">Felipe Oliveira Linard • Nathália Cristiane Santos • Sabrina Teixeira</p>
+       </div><!-- Copyright -->
+       <div style="padding-top: 8px; border-top: 1px solid #e2e8f0;">
+        <p style="color: #718096; font-size: 10px; margin: 0;">© 2024 Missão Industrial - UNESP | CC</p>
+       </div>
+      </div>
+     </footer>
+    </div><!-- Game Page -->
+    <div id="gamePage" class="page">
+     <div class="module-header">
+      <h2 style="color: #667eea; font-size: 32px;">🎮 Jogo Final - Museu Industrial</h2>
+      <p style="color: #718096; font-size: 16px;">Parabéns por completar todos os módulos! Explore o museu interativo e teste seus conhecimentos!</p>
+     </div>
+     <div style="background: linear-gradient(135deg, #FFF8DC 0%, #FFE4B5 100%); padding: 24px; border-radius: 12px; border-left: 4px solid #8B4513; margin-bottom: 32px;">
+      <h3 style="color: #8B4513; margin-bottom: 12px; font-size: 18px; font-weight: bold;">🏛️ Museu Interativo: Revolução Industrial</h3>
+      <p style="color: #4a5568; font-size: 15px; line-height: 1.6; margin: 0;">Explore uma experiência imersiva que conecta os conteúdos dos 5 módulos! Navegue pela história das revoluções industriais, descubra artefatos históricos e teste seus conhecimentos em um ambiente interativo e envolvente. Boa sorte, explorador! 🚀</p>
+     </div>
+     <div style="background: linear-gradient(135deg, #f6f8fb 0%, #e9ecef 100%); padding: 24px; border-radius: 12px; margin: 24px 0; border: 3px solid #8B4513;"><iframe src="https://view.genially.com/69b3362d508d939cda4b8dd9/interactive-content-museu" style="width: 100%; height: 800px; border: none; border-radius: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);" title="Museu Interativo - Revolução Industrial" allow="fullscreen; picture-in-picture"></iframe>
+     </div>
+     <div style="margin-top: 40px; padding: 24px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 8px;">
+      <h4 style="color: #856404; margin-bottom: 12px; font-size: 18px;">💡 Dicas para explorar o museu:</h4>
+      <ul style="color: #856404; line-height: 1.8; padding-left: 24px;">
+       <li>Clique em todos os objetos e elementos interativos</li>
+       <li>Leia as descrições e informações de cada artefato</li>
+       <li>Complete todos os desafios dentro do museu</li>
+       <li>Descubra conexões entre os 5 módulos de revoluções</li>
+       <li>Divirta-se explorando a história! 🎯</li>
+      </ul>
+     </div>
+     <div style="text-align: center; margin-top: 40px;"><button class="next-module-btn" onclick="goToHome()" style="background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); padding: 14px 40px;">Voltar ao Início ⬅️</button>
+     </div>
+    </div><!-- Module 2 Page -->
+    <div id="module2Page" class="page">
+     <div class="progress-section" style="display: flex; gap: 24px; justify-content: center; margin-bottom: 32px;">
+      <div class="stat-box">
+       <div class="label">
+        Pontos
+       </div>
+       <div class="value" id="totalPoints">
+        0
+       </div>
+      </div>
+      <div class="stat-box">
+       <div class="label">
+        Medalhas
+       </div>
+       <div class="value" id="totalMedals">
+        0
+       </div>
+      </div>
+     </div>
+     <div class="module-header">
+      <h2 id="module2Title">⚡ Módulo 2: Revolução Tecnológica</h2>
+      <p id="module2Description">Eletricidade, petróleo e produção em massa</p>
+     </div><!-- Brief Introduction -->
+     <div style="background: linear-gradient(135deg, #FFF8DC 0%, #FFE4B5 100%); padding: 24px; border-radius: 12px; border-left: 4px solid #8B4513; margin-bottom: 32px;">
+      <h3 style="color: #8B4513; margin-bottom: 12px; font-size: 18px; font-weight: bold;">📚 O que é Revolução Tecnológica?</h3>
+      <p style="color: #4a5568; font-size: 15px; line-height: 1.6; margin: 0;">A Revolução Tecnológica representa a transformação radical dos processos produtivos através de novas fontes de energia (eletricidade e petróleo) e avanços tecnológicos. Este período marcou a mecanização em larga escala, a criação da linha de montagem, a eletrificação das fábricas e o surgimento de novos setores industriais como automobilismo, energia elétrica e petroquímica. Transformou não apenas a produção, mas também o estilo de vida urbano, com iluminação pública, transportes modernos e novos padrões de consumo.</p>
+     </div><!-- Game Section -->
+     <div style="margin: 32px 0;">
+      <h3 style="color: #8B4513; font-size: 24px; margin-bottom: 16px; text-align: center; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">🎮 Desafio Interativo: Jogo de Arcade</h3>
+      <p style="text-align: center; color: #718096; font-size: 15px; margin-bottom: 24px;">Teste seus conhecimentos sobre a Revolução Tecnológica com este jogo educativo!</p>
+      <div style="background: linear-gradient(135deg, #f6f8fb 0%, #e9ecef 100%); padding: 24px; border-radius: 12px; border: 3px solid #8B4513;"><iframe src="https://www.studyfetch.com/share/feature/arcade_game/cnbraw023zewn51g8n36nos6gwi5xtc5" style="width: 100%; height: 600px; border: none; border-radius: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);" title="Jogo Educativo - Revolução Tecnológica" allow="fullscreen; picture-in-picture"></iframe>
+      </div>
+     </div><!-- Return Button -->
+     <div style="text-align: center; margin-top: 40px;"><button class="next-module-btn" onclick="completeModule()" style="background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); padding: 14px 40px;">Voltar ao Início ⬅️</button>
+     </div>
+    </div><!-- Module 1 Page -->
+    <div id="module1Page" class="page">
+     <div class="progress-section" style="display: flex; gap: 24px; justify-content: center; margin-bottom: 32px;">
+      <div class="stat-box">
+       <div class="label">
+        Pontos
+       </div>
+       <div class="value" id="totalPoints">
+        0
+       </div>
+      </div>
+      <div class="stat-box">
+       <div class="label">
+        Medalhas
+       </div>
+       <div class="value" id="totalMedals">
+        0
+       </div>
+      </div>
+     </div>
+     <div class="module-header">
+      <h2 id="module1Title">📍 Módulo 1: Revolução Industrial</h2>
+      <p id="module1Description">Mecanização do trabalho, urbanização e novas relações de produção</p>
+     </div><!-- Video Section -->
+     <div class="video-container"><iframe width="100%" height="400" src="https://www.youtube.com/embed/aVQ_1srdzK4?si=c-vP2iPLSXihRJV5" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen style="border-radius: 12px;"></iframe>
+     </div><!-- Interactive Map -->
+     <div class="map-container">
+      <h3 style="margin-bottom: 16px; color: #667eea;">🗺️ Mapa Interativo: Revolução Industrial - Inglaterra e EUA</h3>
+      <p style="margin-bottom: 12px; color: #718096;">Clique nos marcadores para explorar as principais cidades industriais</p>
+      <div style="display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap;">
+       <div style="display: flex; align-items: center; gap: 8px;">
+        <div style="width: 24px; height: 24px; background: #667eea; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 2px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+         🏭
+        </div><span style="color: #4a5568; font-size: 14px; font-weight: 600;">Inglaterra (Berço da Revolução)</span>
+       </div>
+       <div style="display: flex; align-items: center; gap: 8px;">
+        <div style="width: 24px; height: 24px; background: #e74c3c; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 2px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+         🇺🇸
+        </div><span style="color: #4a5568; font-size: 14px; font-weight: 600;">Estados Unidos (Expansão Industrial)</span>
+       </div>
+      </div>
+      <div id="leafletMap" style="height: 450px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);"></div>
+     </div><!-- Padlet Section -->
+     <div style="margin: 32px 0;">
+      <h3 style="margin-bottom: 16px; color: #667eea;">💬 Mural Colaborativo</h3>
+      <p style="margin-bottom: 16px; color: #718096;">Compartilhe suas reflexões e interaja com outros estudantes</p>
+      <div class="padlet-embed" style="border:1px solid rgba(0,0,0,0.1);border-radius:12px;box-sizing:border-box;overflow:hidden;position:relative;width:100%;background:#F4F4F4;box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);">
+       <p style="padding:0;margin:0"><iframe src="https://padlet.com/embed/l36gzocosfcilunr" frameborder="0" allow="camera;microphone;geolocation;display-capture;clipboard-write" style="width:100%;height:608px;display:block;padding:0;margin:0"></iframe></p>
+       <div style="display:flex;align-items:center;justify-content:end;margin:0;height:28px">
+        <a href="https://padlet.com?ref=embed" style="display:block;flex-grow:0;margin:0;border:none;padding:0;text-decoration:none" target="_blank">
+         <div style="display:flex;align-items:center;">
+          <img src="https://padlet.net/embeds/made_with_padlet_2022.png" width="114" height="28" style="padding:0;margin:0;background:0 0;border:none;box-shadow:none" alt="Criado com o Padlet">
+         </div></a>
+       </div>
+      </div>
+     </div><!-- Infographic -->
+     <div style="margin: 32px 0;">
+      <h3 style="margin-bottom: 16px; color: #667eea;">📊 Dados da Revolução Industrial</h3>
+      <div class="infographic">
+       <div class="info-card">
+        <div class="number">
+         1760
+        </div>
+        <div class="label">
+         Início da Revolução
+        </div>
+       </div>
+       <div class="info-card">
+        <div class="number">
+         300%
+        </div>
+        <div class="label">
+         Aumento da Produção
+        </div>
+       </div>
+       <div class="info-card">
+        <div class="number">
+         🏭
+        </div>
+        <div class="label">
+         Máquina a Vapor
+        </div>
+       </div>
+       <div class="info-card">
+        <div class="number">
+         🚂
+        </div>
+        <div class="label">
+         Ferrovias
+        </div>
+       </div>
+      </div>
+     </div><!-- Quiz Section -->
+     <div class="quiz-container">
+      <h3 style="margin-bottom: 24px; color: #667eea; font-size: 24px;">🎯 Desafio: Quiz da Revolução Industrial</h3>
+      <div class="question-card">
+       <h3>1. Qual país foi o berço da Revolução Industrial?</h3>
+       <div class="options"><button class="option-btn" data-question="q1" data-answer="a">A) França</button> <button class="option-btn" data-question="q1" data-answer="b">B) Inglaterra</button> <button class="option-btn" data-question="q1" data-answer="c">C) Alemanha</button> <button class="option-btn" data-question="q1" data-answer="d">D) Estados Unidos</button>
+       </div>
+      </div>
+      <div class="question-card">
+       <h3>2. Qual invenção foi fundamental para a Revolução Industrial?</h3>
+       <div class="options"><button class="option-btn" data-question="q2" data-answer="a">A) Computador</button> <button class="option-btn" data-question="q2" data-answer="b">B) Máquina a vapor</button> <button class="option-btn" data-question="q2" data-answer="c">C) Telefone</button> <button class="option-btn" data-question="q2" data-answer="d">D) Avião</button>
+       </div>
+      </div>
+      <div class="question-card">
+       <h3>3. Qual setor foi o primeiro a se industrializar?</h3>
+       <div class="options"><button class="option-btn" data-question="q3" data-answer="a">A) Alimentício</button> <button class="option-btn" data-question="q3" data-answer="b">B) Automobilístico</button> <button class="option-btn" data-question="q3" data-answer="c">C) Têxtil</button> <button class="option-btn" data-question="q3" data-answer="d">D) Eletrônico</button>
+       </div>
+      </div>
+      <div class="question-card">
+       <h3>4. O que caracterizou a urbanização durante a Revolução Industrial?</h3>
+       <div class="options"><button class="option-btn" data-question="q4" data-answer="a">A) Êxodo urbano</button> <button class="option-btn" data-question="q4" data-answer="b">B) Crescimento das cidades</button> <button class="option-btn" data-question="q4" data-answer="c">C) Diminuição da população</button> <button class="option-btn" data-question="q4" data-answer="d">D) Isolamento rural</button>
+       </div>
+      </div>
+      <div class="question-card">
+       <h3>5. Qual foi uma consequência social da Revolução Industrial?</h3>
+       <div class="options"><button class="option-btn" data-question="q5" data-answer="a">A) Fim do trabalho</button> <button class="option-btn" data-question="q5" data-answer="b">B) Surgimento da classe operária</button> <button class="option-btn" data-question="q5" data-answer="c">C) Retorno ao feudalismo</button> <button class="option-btn" data-question="q5" data-answer="d">D) Extinção das cidades</button>
+       </div>
+      </div><button class="submit-quiz-btn" onclick="submitQuiz()" id="submitBtn">Enviar Respostas 🚀</button>
+     </div><!-- Results Section -->
+     <div id="resultsSection" style="display: none;">
+      <div class="results-container">
+       <h3>��� Missão Concluída!</h3>
+       <div class="medal" id="medalDisplay">
+        🏆
+       </div>
+       <div class="score-display" id="scoreDisplay">
+        0/5
+       </div>
+       <p id="feedbackMessage" style="font-size: 18px; color: #4a5568; margin: 16px 0;"></p><button class="next-module-btn" onclick="completeModule()">Voltar ao Início ➡️</button>
+      </div>
+     </div><!-- Challenge: Connection with Present -->
+     <div style="margin-top: 48px; padding: 32px; background: linear-gradient(135deg, #f6f8fb 0%, #e9ecef 100%); border-radius: 12px; border: 3px solid #667eea;">
+      <h3 style="color: #667eea; font-size: 24px; margin-bottom: 16px; text-align: center;">�� Desafio: Conexão com o Presente</h3>
+      <p style="color: #4a5568; font-size: 16px; line-height: 1.6; margin-bottom: 24px; text-align: center;">Reflita sobre como a Revolução Industrial impacta sua vida hoje. Compartilhe sua resposta abaixo:</p>
+      <form id="challengeForm" style="max-width: 700px; margin: 0 auto;">
+       <div style="margin-bottom: 20px;"><label for="studentNameInput" style="display: block; font-weight: bold; color: #2d3748; margin-bottom: 8px; font-size: 14px;"> Seu Nome: </label> <input type="text" id="studentNameInput" required placeholder="Digite seu nome completo" style="width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 15px; transition: all 0.3s ease; box-sizing: border-box;">
+       </div>
+       <div style="margin-bottom: 20px;"><label for="connectionResponse" style="display: block; font-weight: bold; color: #2d3748; margin-bottom: 8px; font-size: 14px;"> Como a Revolução Industrial influencia sua vida hoje? (Pense em tecnologia, trabalho, cidade, etc.) </label> <textarea id="connectionResponse" required rows="5" placeholder="Escreva sua reflexão aqui... (mínimo 50 caracteres)" style="width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 15px; resize: vertical; transition: all 0.3s ease; box-sizing: border-box; font-family: inherit;"></textarea>
+        <div id="charCount" style="text-align: right; font-size: 12px; color: #718096; margin-top: 4px;">
+         0 / 50 caracteres mínimos
+        </div>
+       </div><button type="submit" id="submitChallengeBtn" style="width: 100%; padding: 14px 32px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.3s ease;"> Enviar Reflexão 🚀 </button>
+      </form>
+      <div id="challengeSuccess" style="display: none; margin-top: 24px; padding: 20px; background: #c6f6d5; border-radius: 8px; border-left: 4px solid #48bb78; text-align: center;">
+       <p style="color: #22543d; font-weight: bold; font-size: 16px; margin: 0;">�� Reflex��o enviada com sucesso! Continue explorando os módulos!</p>
+      </div>
+     </div><!-- Medals System -->
+     <div style="margin-top: 48px;">
+      <h3 style="color: #667eea; font-size: 24px; margin-bottom: 24px; text-align: center;"><span style="font-size: 28px;">🏆</span> Suas Conquistas</h3>
+      <div class="medal-display">
+       <div class="medal-item" id="medal-video">
+        <div class="medal-icon-container">
+         <div class="medal-icon">
+          🎬
+         </div>
+        </div>
+        <div class="medal-name">
+         Espectador
+        </div>
+        <div class="medal-description">
+         Assistiu ao vídeo
+        </div>
+       </div>
+       <div class="medal-item" id="medal-explorer">
+        <div class="medal-icon-container">
+         <div class="medal-icon">
+          🗺️
+         </div>
+        </div>
+        <div class="medal-name">
+         Explorador
+        </div>
+        <div class="medal-description">
+         Explorou o mapa
+        </div>
+       </div>
+       <div class="medal-item" id="medal-scholar">
+        <div class="medal-icon-container">
+         <div class="medal-icon">
+          📚
+         </div>
+        </div>
+        <div class="medal-name">
+         Estudioso
+        </div>
+        <div class="medal-description">
+         Leu os infográficos
+        </div>
+       </div>
+       <div class="medal-item" id="medal-thinker">
+        <div class="medal-icon-container">
+         <div class="medal-icon">
+          💭
+         </div>
+        </div>
+        <div class="medal-name">
+         Pensador
+        </div>
+        <div class="medal-description">
+         Completou o quiz
+        </div>
+       </div>
+       <div class="medal-item" id="medal-master">
+        <div class="medal-icon-container">
+         <div class="medal-icon">
+          👑
+         </div>
+        </div>
+        <div class="medal-name">
+         Mestre Industrial
+        </div>
+        <div class="medal-description">
+         Nota máxima no quiz
+        </div>
+       </div>
+      </div>
+     </div>
+    </div><!-- Module 3 Page -->
+    <div id="module3Page" class="page">
+     <div class="progress-section" style="display: flex; gap: 24px; justify-content: center; margin-bottom: 32px;">
+      <div class="stat-box">
+       <div class="label">Pontos</div>
+       <div class="value" id="m3Points">0</div>
+      </div>
+      <div class="stat-box">
+       <div class="label">Fábricas</div>
+       <div class="value" id="m3Factories">0</div>
+      </div>
+     </div>
+     <div class="module-header">
+      <h2>💻 Módulo 3: Revolução Digital</h2>
+      <p>Computadores, internet e transformação digital — Séc. XX</p>
+     </div>
+     <!-- Intro card -->
+     <div style="background: linear-gradient(135deg, #FFF8DC 0%, #FFE4B5 100%); padding: 20px 24px; border-radius: 12px; border-left: 4px solid #8B4513; margin-bottom: 28px;">
+      <h3 style="color: #8B4513; margin-bottom: 8px; font-size: 17px; font-weight: bold;">🎮 Jogo: Fábricas do Mundo</h3>
+      <p style="color: #4a5568; font-size: 14px; line-height: 1.6; margin: 0;">Responda perguntas sobre a 2ª Revolução Industrial e a industrialização do Séc. XX para construir fábricas no mapa-múndi. Cada acerto expande seu império industrial!</p>
+     </div>
+     <!-- GAME 1 BOARD -->
+     <div style="border: 2px solid #8B4513; border-radius: 10px; overflow: hidden; margin-bottom: 28px;">
+      <!-- Top bar -->
+      <div style="background: linear-gradient(135deg, #8B4513 0%, #D2691E 100%); color: white; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+       <div>
+        <div style="font-size: 15px; font-weight: bold;">🏭 Fábricas do Mundo</div>
+        <div id="g1-progress" style="font-size: 12px; opacity: .8; margin-top: 2px;">Pergunta 1 de 8</div>
+       </div>
+       <div style="display: flex; gap: 20px;">
+        <div style="text-align: center;">
+         <div id="g1-score" style="font-size: 22px; font-weight: bold; color: #FFD700;">0</div>
+         <div style="font-size: 11px; opacity: .8; text-transform: uppercase; letter-spacing: .06em;">Fábricas</div>
+        </div>
+        <div style="text-align: center;">
+         <div id="g1-lives" style="font-size: 22px; font-weight: bold; color: #FFD700;">3</div>
+         <div style="font-size: 11px; opacity: .8; text-transform: uppercase; letter-spacing: .06em;">Tentativas</div>
+        </div>
+       </div>
+      </div>
+      <!-- SVG Map -->
+      <div id="g1-map" style="background: #a8d8ea; position: relative; height: 280px; overflow: hidden;">
+       <svg width="100%" height="100%" viewBox="0 0 700 280" style="position:absolute;inset:0;">
+        <rect width="700" height="280" fill="#a8d8ea"/>
+        <path d="M310,55 L360,50 L380,65 L370,85 L350,90 L330,80 L310,75Z" fill="#6ab04c" stroke="#3d8b2a" stroke-width="1.5"/>
+        <path d="M100,45 L200,40 L210,75 L200,115 L170,125 L140,105 L110,85 L95,65Z" fill="#6ab04c" stroke="#3d8b2a" stroke-width="1.5"/>
+        <path d="M155,138 L200,133 L210,170 L200,215 L175,230 L155,220 L145,190 L148,158Z" fill="#6ab04c" stroke="#3d8b2a" stroke-width="1.5"/>
+        <path d="M305,95 L360,95 L370,140 L355,190 L330,205 L310,190 L300,155 L302,118Z" fill="#f6c442" stroke="#d4a832" stroke-width="1.5"/>
+        <path d="M390,45 L540,45 L570,82 L570,122 L530,140 L480,150 L440,132 L400,112 L385,82Z" fill="#6ab04c" stroke="#3d8b2a" stroke-width="1.5"/>
+        <ellipse cx="555" cy="88" rx="12" ry="18" fill="#e74c3c" stroke="#c0392b" stroke-width="1.5"/>
+        <path d="M490,190 L560,185 L575,218 L560,242 L520,248 L490,230Z" fill="#6ab04c" stroke="#3d8b2a" stroke-width="1.5"/>
+        <text x="155" y="82" font-size="9" fill="#1a1a1a" font-family="sans-serif" font-weight="bold">EUA</text>
+        <text x="330" y="70" font-size="8" fill="#1a1a1a" font-family="sans-serif" font-weight="bold">EUR</text>
+        <text x="162" y="182" font-size="8" fill="#1a1a1a" font-family="sans-serif" font-weight="bold">BRASIL</text>
+        <text x="318" y="148" font-size="8" fill="#1a1a1a" font-family="sans-serif" font-weight="bold">ÁFRICA</text>
+        <text x="455" y="95" font-size="8" fill="#1a1a1a" font-family="sans-serif" font-weight="bold">ÁSIA</text>
+        <text x="540" y="85" font-size="7" fill="#fff" font-family="sans-serif" font-weight="bold">JAP</text>
+       </svg>
+       <div id="g1-factories" style="position:absolute;inset:0;pointer-events:none;"></div>
+       <div id="g1-map-hint" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.65);color:white;padding:.75rem 1.5rem;border-radius:8px;text-align:center;font-size:.85rem;pointer-events:none;">Responda as perguntas para construir fábricas! 🏭</div>
+      </div>
+      <!-- Question panel -->
+      <div id="g1-qpanel" style="padding: 20px; background: #fffdf5; border-top: 1px solid #e8d5b0;">
+       <div id="g1-qtext" style="font-size: 15px; font-weight: bold; color: #4a2c0a; margin-bottom: 16px; line-height: 1.5;">Carregando...</div>
+       <div id="g1-options" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;"></div>
+       <div id="g1-feedback" style="display:none; margin-top: 14px; padding: 12px 16px; border-radius: 8px; font-size: 14px; line-height: 1.5;"></div>
+       <button id="g1-next" onclick="g1Next()" style="display:none; margin-top: 14px; background: linear-gradient(135deg, #8B4513 0%, #D2691E 100%); color: white; border: none; padding: 10px 24px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold;">Próxima pergunta →</button>
+      </div>
+      <!-- Result panel -->
+      <div id="g1-result" style="display:none; padding: 32px; text-align: center; background: #fffdf5; border-top: 1px solid #e8d5b0;">
+       <h3 style="font-size: 22px; color: #8B4513; margin-bottom: 8px;">Jogo Concluído!</h3>
+       <div id="g1-final-score" style="font-size: 52px; font-weight: 900; color: #D2691E; line-height: 1;">0</div>
+       <p style="color: #718096; margin: 6px 0 4px;">fábricas construídas de 8 possíveis</p>
+       <div id="g1-rating" style="font-size: 18px; margin: 8px 0;"></div>
+       <p id="g1-msg" style="color: #4a5568; font-size: 14px; max-width: 440px; margin: 0 auto 16px;"></p>
+       <button onclick="g1Init()" style="background: linear-gradient(135deg, #8B4513 0%, #D2691E 100%); color: white; border: none; padding: 12px 28px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold;">Jogar novamente 🔄</button>
+      </div>
+     </div>
+     <!-- Back button -->
+     <div style="text-align: center; margin-top: 32px;">
+      <button class="next-module-btn" onclick="goToHome()" style="background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); padding: 14px 40px;">Voltar ao Início ⬅️</button>
+     </div>
+    </div><!-- Module 4 Page -->
+    <div id="module4Page" class="page">
+     <div class="progress-section" style="display: flex; gap: 24px; justify-content: center; margin-bottom: 32px;">
+      <div class="stat-box">
+       <div class="label">Pontos</div>
+       <div class="value" id="m4Points">0</div>
+      </div>
+      <div class="stat-box">
+       <div class="label">Combo</div>
+       <div class="value" id="m4Combo">x1</div>
+      </div>
+     </div>
+     <div class="module-header">
+      <h2>🤖 Módulo 4: Revolução 4.0</h2>
+      <p>Inteligência artificial, IoT e automação inteligente — Séc. XXI</p>
+     </div>
+     <!-- Intro card -->
+     <div style="background: linear-gradient(135deg, #FFF8DC 0%, #FFE4B5 100%); padding: 20px 24px; border-radius: 12px; border-left: 4px solid #8B4513; margin-bottom: 28px;">
+      <h3 style="color: #8B4513; margin-bottom: 8px; font-size: 17px; font-weight: bold;">🎮 Jogo: Conecta Futuro</h3>
+      <p style="color: #4a5568; font-size: 14px; line-height: 1.6; margin: 0;">Você é designer de uma cidade inteligente! Classifique tecnologias da 4ª Revolução Industrial nas categorias corretas e construa sua cidade do futuro. Acertos consecutivos ativam o modo Combo!</p>
+     </div>
+     <!-- GAME 2 BOARD -->
+     <div style="border: 2px solid #8B4513; border-radius: 10px; overflow: hidden; margin-bottom: 28px;">
+      <!-- Top bar -->
+      <div style="background: linear-gradient(135deg, #8B4513 0%, #D2691E 100%); color: white; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+       <div>
+        <div style="font-size: 15px; font-weight: bold;">🤖 Conecta Futuro</div>
+        <div id="g2-progress" style="font-size: 12px; opacity: .8; margin-top: 2px;">Rodada 1 de 6</div>
+       </div>
+       <div style="display: flex; gap: 20px;">
+        <div style="text-align: center;">
+         <div id="g2-score" style="font-size: 22px; font-weight: bold; color: #FFD700;">0</div>
+         <div style="font-size: 11px; opacity: .8; text-transform: uppercase; letter-spacing: .06em;">Pontos</div>
+        </div>
+        <div style="text-align: center;">
+         <div id="g2-combo-display" style="font-size: 22px; font-weight: bold; color: #FFD700;">x1</div>
+         <div style="font-size: 11px; opacity: .8; text-transform: uppercase; letter-spacing: .06em;">Combo</div>
+        </div>
+       </div>
+      </div>
+      <!-- Terminal -->
+      <div id="g2-terminal" style="background: #1a0f00; padding: 14px 18px; font-family: 'Courier New', monospace; font-size: 13px; line-height: 1.7; min-height: 80px; color: #D2691E; border-bottom: 1px solid #3d2000;">
+       <span style="color: #FFD700;">[CIDADE INTELIGENTE 4.0]</span><br>
+       <span style="color: #e8c97a;">&gt; Iniciando módulo de classificação tecnológica...</span><br>
+       <span style="color: #e8c97a;">&gt; Classifique cada tecnologia corretamente para construir sua cidade!</span><br>
+       <span style="animation: blink4 1s infinite; color: #D2691E;">_</span>
+      </div>
+      <!-- Challenge panel -->
+      <div id="g2-challenge-panel" style="padding: 20px; background: #fffdf5; border-top: 1px solid #e8d5b0;">
+       <h4 id="g2-q-title" style="color: #4a2c0a; font-size: 15px; font-weight: bold; margin-bottom: 8px;"></h4>
+       <p id="g2-instructions" style="font-size: 13px; color: #718096; margin-bottom: 14px;"></p>
+       <!-- Cards to classify -->
+       <div id="g2-cards-area" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;"></div>
+       <!-- Drop zones -->
+       <div id="g2-drop-areas" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px;"></div>
+       <button onclick="g2Check()" style="background: linear-gradient(135deg, #8B4513 0%, #D2691E 100%); color: white; border: none; padding: 10px 24px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold;">✓ Verificar resposta</button>
+       <div id="g2-feedback" style="display:none; margin-top: 14px; padding: 12px 16px; border-radius: 8px; font-size: 14px; line-height: 1.5;"></div>
+       <button id="g2-next-btn" onclick="g2Next()" style="display:none; margin-top: 12px; background: linear-gradient(135deg, #8B4513 0%, #D2691E 100%); color: white; border: none; padding: 10px 24px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold;">Próxima rodada →</button>
+      </div>
+      <!-- Result panel -->
+      <div id="g2-result" style="display:none; padding: 32px; text-align: center; background: #fffdf5; border-top: 1px solid #e8d5b0;">
+       <h3 style="font-size: 22px; color: #8B4513; margin-bottom: 8px;">Cidade Construída! 🏙️</h3>
+       <div id="g2-final-score" style="font-size: 52px; font-weight: 900; color: #D2691E; line-height: 1;">0</div>
+       <p style="color: #718096; margin: 6px 0 4px;">pontos conquistados</p>
+       <div id="g2-rating" style="font-size: 18px; margin: 8px 0;"></div>
+       <p id="g2-msg" style="color: #4a5568; font-size: 14px; max-width: 440px; margin: 0 auto 16px;"></p>
+       <button onclick="g2Init()" style="background: linear-gradient(135deg, #8B4513 0%, #D2691E 100%); color: white; border: none; padding: 12px 28px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold;">Jogar novamente 🔄</button>
+      </div>
+     </div>
+     <!-- Back button -->
+     <div style="text-align: center; margin-top: 32px;">
+      <button class="next-module-btn" onclick="goToHome()" style="background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); padding: 14px 40px;">Voltar ao Início ⬅️</button>
+     </div>
+    </div>
+   </main>
+  </div><!-- Toast Notification -->
+  <div id="toast" class="toast"></div><!-- Visit Counter -->
+  <div class="visit-counter">
+   <span>👁️</span>
+   <div id="visitCount">
+    0
+   </div>
+  </div>
+  <script>
+    // Default Configuration
+    const defaultConfig = {
+      site_title: "🎯 Missão Industrial",
+      site_subtitle: "Recurso Educacional Interativo",
+      module1_title: "📍 Módulo 1: Revolução Industrial",
+      module1_description: "Mecanização do trabalho, urbanização e novas relações de produção",
+      welcome_message: "Bem-vindo à Missão Industrial! 🚀",
+      background_color: "#667eea",
+      surface_color: "#ffffff",
+      text_color: "#2d3748",
+      primary_action_color: "#667eea",
+      secondary_action_color: "#764ba2",
+      font_family: "Segoe UI",
+      font_size: 16
+    };
+
+    // Quiz answers (correct answers)
+    const correctAnswers = {
+      q1: 'b',
+      q2: 'b',
+      q3: 'c',
+      q4: 'b',
+      q5: 'b'
+    };
+
+    let userAnswers = {};
+    let currentPage = 'home';
+    let isQuizSubmitted = false;
+    let unlockedMedals = {
+      video: false,
+      explorer: false,
+      scholar: false,
+      thinker: false,
+      master: false
+    };
+
+    // Initialize visit counter
+    function initializeVisitCounter() {
+      let visitCount = localStorage.getItem('visitCount');
+      visitCount = visitCount ? parseInt(visitCount) + 1 : 1;
+      localStorage.setItem('visitCount', visitCount);
+      
+      const visitCountElement = document.getElementById('visitCount');
+      if (visitCountElement) {
+        visitCountElement.textContent = visitCount;
+      }
+    }
+
+    // Data SDK Handler
+    const dataHandler = {
+      onDataChanged(data) {
+        if (data.length > 0) {
+          const latestProgress = data[data.length - 1];
+          updateProgressDisplay(latestProgress);
+        }
+      }
+    };
+
+    // Initialize SDKs
+    async function initializeApp() {
+      if (window.dataSdk) {
+        const initResult = await window.dataSdk.init(dataHandler);
+        if (!initResult.isOk) {
+          console.error("Failed to initialize Data SDK");
+        }
+      }
+
+      if (window.elementSdk) {
+        await window.elementSdk.init({
+          defaultConfig,
+          onConfigChange: async (config) => {
+            const siteTitle = document.getElementById('siteTitle');
+            const siteSubtitle = document.getElementById('siteSubtitle');
+            const module1Title = document.getElementById('module1Title');
+            const module1Description = document.getElementById('module1Description');
+            const welcomeMessage = document.getElementById('welcomeMessage');
+
+            if (siteTitle) siteTitle.textContent = config.site_title || defaultConfig.site_title;
+            if (siteSubtitle) siteSubtitle.textContent = config.site_subtitle || defaultConfig.site_subtitle;
+            if (module1Title) module1Title.textContent = config.module1_title || defaultConfig.module1_title;
+            if (module1Description) module1Description.textContent = config.module1_description || defaultConfig.module1_description;
+            if (welcomeMessage) {
+              const messageText = config.welcome_message || defaultConfig.welcome_message;
+              welcomeMessage.textContent = messageText;
+            }
+
+            const customFont = config.font_family || defaultConfig.font_family;
+            const baseFontStack = 'system-ui, -apple-system, sans-serif';
+            document.body.style.fontFamily = `${customFont}, ${baseFontStack}`;
+
+            const baseSize = config.font_size || defaultConfig.font_size;
+            document.body.style.fontSize = `${baseSize}px`;
+
+            const bgGradient = `linear-gradient(135deg, ${config.background_color || defaultConfig.background_color} 0%, ${config.secondary_action_color || defaultConfig.secondary_action_color} 100%)`;
+            document.body.style.background = bgGradient;
+          },
+          mapToCapabilities: (config) => ({
+            recolorables: [
+              {
+                get: () => config.background_color || defaultConfig.background_color,
+                set: (value) => {
+                  if (window.elementSdk) {
+                    window.elementSdk.setConfig({ background_color: value });
+                  }
+                }
+              },
+              {
+                get: () => config.surface_color || defaultConfig.surface_color,
+                set: (value) => {
+                  if (window.elementSdk) {
+                    window.elementSdk.setConfig({ surface_color: value });
+                  }
+                }
+              },
+              {
+                get: () => config.text_color || defaultConfig.text_color,
+                set: (value) => {
+                  if (window.elementSdk) {
+                    window.elementSdk.setConfig({ text_color: value });
+                  }
+                }
+              },
+              {
+                get: () => config.primary_action_color || defaultConfig.primary_action_color,
+                set: (value) => {
+                  if (window.elementSdk) {
+                    window.elementSdk.setConfig({ primary_action_color: value });
+                  }
+                }
+              },
+              {
+                get: () => config.secondary_action_color || defaultConfig.secondary_action_color,
+                set: (value) => {
+                  if (window.elementSdk) {
+                    window.elementSdk.setConfig({ secondary_action_color: value });
+                  }
+                }
+              }
+            ],
+            borderables: [],
+            fontEditable: {
+              get: () => config.font_family || defaultConfig.font_family,
+              set: (value) => {
+                if (window.elementSdk) {
+                  window.elementSdk.setConfig({ font_family: value });
+                }
+              }
+            },
+            fontSizeable: {
+              get: () => config.font_size || defaultConfig.font_size,
+              set: (value) => {
+                if (window.elementSdk) {
+                  window.elementSdk.setConfig({ font_size: value });
+                }
+              }
+            }
+          }),
+          mapToEditPanelValues: (config) => new Map([
+            ["site_title", config.site_title || defaultConfig.site_title],
+            ["site_subtitle", config.site_subtitle || defaultConfig.site_subtitle],
+            ["module1_title", config.module1_title || defaultConfig.module1_title],
+            ["module1_description", config.module1_description || defaultConfig.module1_description],
+            ["welcome_message", config.welcome_message || defaultConfig.welcome_message]
+          ])
+        });
+      }
+
+      setupEventListeners();
+    }
+
+    // Initialize visit counter on app load
+    initializeVisitCounter();
+
+    // Navigation Functions
+    function openModule(moduleId) {
+      currentPage = moduleId;
+      document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+      document.getElementById(moduleId + 'Page').classList.add('active');
+      document.getElementById('backBtn').style.display = 'block';
+      window.scrollTo(0, 0);
+      
+      if (moduleId === 'module1') {
+        showToast('Módulo 1 iniciado! Boa sorte! 🚀');
+        
+        // Initialize Leaflet map
+        setTimeout(() => {
+          if (!leafletMap) {
+            initializeLeafletMap();
+          }
+        }, 500);
+        
+        // Unlock video medal after a delay
+        setTimeout(() => {
+          unlockMedal('video');
+        }, 3000);
+        
+        // Unlock scholar medal when scrolling to infographic
+        const infographic = document.querySelector('.infographic');
+        if (infographic) {
+          const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+              if (entry.isIntersecting) {
+                unlockMedal('scholar');
+                observer.disconnect();
+              }
+            });
+          }, { threshold: 0.5 });
+          observer.observe(infographic);
+        }
+      }
+    }
+
+    function goToHome() {
+      currentPage = 'home';
+      document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+      document.getElementById('homePage').classList.add('active');
+      document.getElementById('backBtn').style.display = 'none';
+      window.scrollTo(0, 0);
+    }
+
+    function showLockedMessage() {
+      showToast('🔒 Este módulo ainda está bloqueado. Complete os módulos anteriores primeiro!');
+    }
+
+    function openGamePage() {
+      // Check if all modules are completed (for now, just show locked message)
+      // In the future, this would check actual progress
+      // showToast('🔒 Complete todos os módulos para desbloquear o jogo!');
+      
+      // Uncomment below to enable the game page
+      currentPage = 'game';
+      document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+      document.getElementById('gamePage').classList.add('active');
+      document.getElementById('backBtn').style.display = 'block';
+      window.scrollTo(0, 0);
+      showToast('🎮 Jogo desbloqueado! Boa sorte!');
+    }
+
+    // Setup Event Listeners
+    function setupEventListeners() {
+      // Quiz options
+      document.querySelectorAll('.option-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (isQuizSubmitted) return;
+          
+          const question = btn.dataset.question;
+          const answer = btn.dataset.answer;
+          
+          // Remove selection from other options in same question
+          document.querySelectorAll(`[data-question="${question}"]`).forEach(b => {
+            b.classList.remove('selected');
+          });
+          
+          btn.classList.add('selected');
+          userAnswers[question] = answer;
+        });
+      });
+
+      // Character counter for challenge response
+      const connectionResponse = document.getElementById('connectionResponse');
+      const charCount = document.getElementById('charCount');
+      
+      if (connectionResponse && charCount) {
+        connectionResponse.addEventListener('input', () => {
+          const length = connectionResponse.value.length;
+          charCount.textContent = `${length} / 50 caracteres mínimos`;
+          
+          if (length >= 50) {
+            charCount.style.color = '#48bb78';
+            charCount.style.fontWeight = 'bold';
+          } else {
+            charCount.style.color = '#718096';
+            charCount.style.fontWeight = 'normal';
+          }
+        });
+
+        // Focus effects
+        connectionResponse.addEventListener('focus', () => {
+          connectionResponse.style.borderColor = '#667eea';
+          connectionResponse.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
+        });
+
+        connectionResponse.addEventListener('blur', () => {
+          connectionResponse.style.borderColor = '#e2e8f0';
+          connectionResponse.style.boxShadow = 'none';
+        });
+      }
+
+      const studentNameInput = document.getElementById('studentNameInput');
+      if (studentNameInput) {
+        studentNameInput.addEventListener('focus', () => {
+          studentNameInput.style.borderColor = '#667eea';
+          studentNameInput.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
+        });
+
+        studentNameInput.addEventListener('blur', () => {
+          studentNameInput.style.borderColor = '#e2e8f0';
+          studentNameInput.style.boxShadow = 'none';
+        });
+      }
+
+      // Challenge form submission
+      const challengeForm = document.getElementById('challengeForm');
+      if (challengeForm) {
+        challengeForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          await submitChallenge();
+        });
+      }
+    }
+
+    // Initialize Leaflet Map
+    let leafletMap = null;
+    
+    function initializeLeafletMap() {
+      // Initialize map with view of Atlantic Ocean (between England and USA)
+      leafletMap = L.map('leafletMap').setView([45.0, -40.0], 3);
+
+      // Add OpenStreetMap tiles
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 19
+      }).addTo(leafletMap);
+
+      // Industrial cities data - England
+      const cities = [
+        {
+          name: 'Manchester',
+          coords: [53.4808, -2.2426],
+          description: '🏭 Centro Têxtil',
+          details: 'Berço da industrialização têxtil. A cidade cresceu rapidamente com fábricas de algodão e foi pioneira na mecanização da produção.',
+          country: 'Inglaterra'
+        },
+        {
+          name: 'Birmingham',
+          coords: [52.4862, -1.8904],
+          description: '⚙️ Metalurgia',
+          details: 'Centro de produção de máquinas e metalurgia. Conhecida como a "oficina do mundo" pela fabricação de ferramentas e equipamentos industriais.',
+          country: 'Inglaterra'
+        },
+        {
+          name: 'Londres',
+          coords: [51.5074, -0.1278],
+          description: '💼 Capital Financeira',
+          details: 'Centro financeiro e comercial do império. Concentrava bancos, seguradoras e o comércio internacional que financiava a industrialização.',
+          country: 'Inglaterra'
+        },
+        {
+          name: 'Liverpool',
+          coords: [53.4084, -2.9916],
+          description: '🚢 Porto Comercial',
+          details: 'Principal porto de exportação de produtos industrializados. Conectava a Inglaterra com o mundo através do com��rcio marítimo.',
+          country: 'Inglaterra'
+        },
+        {
+          name: 'Sheffield',
+          coords: [53.3811, -1.4701],
+          description: '🔧 Produção de Aço',
+          details: 'Centro de produção de aço e cutelaria. Famosa pela qualidade do aço Sheffield usado em ferramentas e máquinas industriais.',
+          country: 'Inglaterra'
+        },
+        {
+          name: 'Leeds',
+          coords: [53.8008, -1.5491],
+          description: '🧵 Indústria Têxtil',
+          details: 'Importante centro de produção de lã e tecidos. Desenvolveu tecnologias para processamento de lã em larga escala.',
+          country: 'Inglaterra'
+        },
+        // USA Industrial Cities
+        {
+          name: 'Nova York',
+          coords: [40.7128, -74.0060],
+          description: '🏙️ Centro Financeiro',
+          details: 'Principal centro financeiro e comercial dos EUA. Porto importante para importação de matérias-primas e exportação de produtos manufaturados.',
+          country: 'EUA'
+        },
+        {
+          name: 'Pittsburgh',
+          coords: [40.4406, -79.9959],
+          description: '🔥 Siderurgia',
+          details: 'Capital do aço americano. Produzia mais da metade do aço dos EUA, fundamental para ferrovias, pontes e construções.',
+          country: 'EUA'
+        },
+        {
+          name: 'Detroit',
+          coords: [42.3314, -83.0458],
+          description: '🚗 Indústria Automobilística',
+          details: 'Berço da indústria automobilística americana. Henry Ford revolucionou a produção em massa com a linha de montagem.',
+          country: 'EUA'
+        },
+        {
+          name: 'Chicago',
+          coords: [41.8781, -87.6298],
+          description: '🚂 Hub Ferroviário',
+          details: 'Centro de transporte e distribuição. Conectava o leste industrializado com o oeste agrícola através de ferrovias.',
+          country: 'EUA'
+        },
+        {
+          name: 'Boston',
+          coords: [42.3601, -71.0589],
+          description: '🧵 Têxtil',
+          details: 'Primeiro centro têxtil dos EUA. Fábricas de algodão e lã seguiram o modelo inglês de industrialização.',
+          country: 'EUA'
+        },
+        {
+          name: 'Filadélfia',
+          coords: [39.9526, -75.1652],
+          description: '⚙️ Manufatura',
+          details: 'Centro de manufatura diversificada. Produzia locomotivas, navios, têxteis e equipamentos industriais.',
+          country: 'EUA'
+        },
+        {
+          name: 'Cleveland',
+          coords: [41.4993, -81.6944],
+          description: '🛢️ Petr��leo e Aço',
+          details: 'Centro de refino de petróleo (Standard Oil de Rockefeller) e produção de aço. Importante porto nos Grandes Lagos.',
+          country: 'EUA'
+        },
+        {
+          name: 'Baltimore',
+          coords: [39.2904, -76.6122],
+          description: '🚢 Porto Industrial',
+          details: 'Porto estrat��gico para comércio e indústria. Centro de construção naval e processamento de tabaco.',
+          country: 'EUA'
+        }
+      ];
+
+      // Add markers for each city
+      cities.forEach(city => {
+        // Different colors for different countries
+        const markerColor = city.country === 'Inglaterra' ? '#667eea' : '#e74c3c';
+        const markerEmoji = city.country === 'Inglaterra' ? '🏭' : '🇺🇸';
+        
+        const customIcon = L.divIcon({
+          className: 'custom-marker',
+          html: `<div style="background: ${markerColor}; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); border: 3px solid white; font-weight: bold;">${markerEmoji}</div>`,
+          iconSize: [36, 36],
+          iconAnchor: [18, 18]
+        });
+        
+        const marker = L.marker(city.coords, { icon: customIcon }).addTo(leafletMap);
+        
+        // Create popup content with country badge
+        const countryBadge = city.country === 'Inglaterra' 
+          ? '<span style="background: #667eea; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;">🇬🇧 INGLATERRA</span>'
+          : '<span style="background: #e74c3c; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;">🇺🇸 EUA</span>';
+        
+        const popupContent = `
+          <div style="font-family: 'Segoe UI', sans-serif; min-width: 220px;">
+            <div style="margin-bottom: 8px;">${countryBadge}</div>
+            <h3 style="color: ${markerColor}; margin: 0 0 8px 0; font-size: 18px; font-weight: bold;">${city.name}</h3>
+            <p style="color: #764ba2; margin: 0 0 8px 0; font-weight: 600; font-size: 14px;">${city.description}</p>
+            <p style="color: #4a5568; margin: 0; font-size: 13px; line-height: 1.5;">${city.details}</p>
+          </div>
+        `;
+        
+        marker.bindPopup(popupContent, {
+          maxWidth: 320,
+          className: 'custom-popup'
+        });
+
+        // Unlock medal on marker click
+        marker.on('click', () => {
+          unlockMedal('explorer');
+          showToast(`📍 ${city.name} (${city.country}): ${city.description}`);
+        });
+      });
+
+      // Add custom CSS for popups
+      const style = document.createElement('style');
+      style.textContent = `
+        .custom-popup .leaflet-popup-content-wrapper {
+          border-radius: 12px;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        }
+        .custom-popup .leaflet-popup-tip {
+          background: white;
+        }
+        .leaflet-popup-content {
+          margin: 16px;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    // Map Info (legacy function for compatibility)
+    function showMapInfo(city, description) {
+      showToast(`📍 ${city}: ${description}`);
+      unlockMedal('explorer');
+    }
+
+    // Unlock Medal
+    function unlockMedal(medalType) {
+      if (!unlockedMedals[medalType]) {
+        unlockedMedals[medalType] = true;
+        const medalElement = document.getElementById(`medal-${medalType}`);
+        if (medalElement) {
+          medalElement.classList.add('unlocked');
+          showToast(`🎉 Nova medalha desbloqueada: ${getMedalName(medalType)}!`);
+        }
+        updateMedalCount();
+      }
+    }
+
+    // Get Medal Name
+    function getMedalName(medalType) {
+      const names = {
+        video: 'Espectador',
+        explorer: 'Explorador',
+        scholar: 'Estudioso',
+        thinker: 'Pensador',
+        master: 'Mestre Industrial'
+      };
+      return names[medalType] || '';
+    }
+
+    // Update Medal Count
+    function updateMedalCount() {
+      const count = Object.values(unlockedMedals).filter(v => v).length;
+      const medalsElement = document.getElementById('totalMedals');
+      if (medalsElement) {
+        medalsElement.textContent = count;
+      }
+    }
+
+    // Submit Quiz
+    async function submitQuiz() {
+      if (isQuizSubmitted) return;
+
+      const answeredQuestions = Object.keys(userAnswers).length;
+      if (answeredQuestions < 5) {
+        showToast('⚠️ Por favor, responda todas as questões antes de enviar!');
+        return;
+      }
+
+      isQuizSubmitted = true;
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Avaliando... ⏳';
+
+      // Calculate score
+      let score = 0;
+      Object.keys(correctAnswers).forEach(question => {
+        const userAnswer = userAnswers[question];
+        const correctAnswer = correctAnswers[question];
+        const isCorrect = userAnswer === correctAnswer;
+        
+        if (isCorrect) score++;
+
+        // Show feedback on options
+        document.querySelectorAll(`[data-question="${question}"]`).forEach(btn => {
+          btn.style.pointerEvents = 'none';
+          if (btn.dataset.answer === correctAnswer) {
+            btn.classList.add('correct');
+          } else if (btn.dataset.answer === userAnswer && !isCorrect) {
+            btn.classList.add('incorrect');
+          }
+        });
+      });
+
+      // Unlock medals
+      unlockMedal('thinker');
+      if (score === 5) {
+        unlockMedal('master');
+      }
+
+      // Determine medal
+      let medal = '🥉';
+      let feedback = 'Continue praticando!';
+      if (score === 5) {
+        medal = '🥇';
+        feedback = 'Excelente! Voc�� dominou o conteúdo!';
+      } else if (score >= 4) {
+        medal = '🥈';
+        feedback = 'Muito bem! Ótimo desempenho!';
+      } else if (score >= 3) {
+        medal = '🥉';
+        feedback = 'Bom trabalho! Continue estudando!';
+      }
+
+      // Display results
+      document.getElementById('medalDisplay').textContent = medal;
+      document.getElementById('scoreDisplay').textContent = `${score}/5`;
+      document.getElementById('feedbackMessage').textContent = feedback;
+      document.getElementById('resultsSection').style.display = 'block';
+
+      // Save progress to Data SDK
+      if (window.dataSdk) {
+        const progressData = {
+          student_name: 'Estudante',
+          current_module: 1,
+          module1_progress: 100,
+          module1_score: score,
+          module1_completed: true,
+          quiz_answers: JSON.stringify(userAnswers),
+          medals_earned: medal,
+          timestamp: new Date().toISOString()
+        };
+
+        const createResult = await window.dataSdk.create(progressData);
+        if (createResult.isOk) {
+          updateProgressDisplay(progressData);
+          showToast('💾 Progresso salvo com sucesso!');
+        } else {
+          showToast('⚠️ Erro ao salvar progresso');
+        }
+      }
+
+      // Scroll to results
+      document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Complete Module
+    function completeModule() {
+      showToast('🎉 Parabéns! M����dulo 1 concluído!');
+      goToHome();
+    }
+
+    // Update Progress Display
+    function updateProgressDisplay(data) {
+      const pointsElement = document.getElementById('totalPoints');
+      const medalsElement = document.getElementById('totalMedals');
+      
+      if (pointsElement) {
+        pointsElement.textContent = (data.module1_score || 0) * 20;
+      }
+      
+      if (medalsElement) {
+        medalsElement.textContent = data.medals_earned ? 1 : 0;
+      }
+    }
+
+    // Submit Challenge
+    async function submitChallenge() {
+      const studentName = document.getElementById('studentNameInput').value.trim();
+      const connectionResponse = document.getElementById('connectionResponse').value.trim();
+      const submitBtn = document.getElementById('submitChallengeBtn');
+
+      // Validation
+      if (studentName.length < 3) {
+        showToast('⚠️ Por favor, digite seu nome completo');
+        return;
+      }
+
+      if (connectionResponse.length < 50) {
+        showToast('⚠️ Sua reflexão precisa ter pelo menos 50 caracteres');
+        return;
+      }
+
+      // Disable button and show loading
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Enviando... ⏳';
+
+      // Save to Data SDK
+      if (window.dataSdk) {
+        const challengeData = {
+          student_name: studentName,
+          current_module: 1,
+          module1_progress: 100,
+          module1_score: 0,
+          module1_completed: false,
+          quiz_answers: '',
+          medals_earned: '',
+          connection_response: connectionResponse,
+          response_length: connectionResponse.length,
+          timestamp: new Date().toISOString()
+        };
+
+        const createResult = await window.dataSdk.create(challengeData);
+        
+        if (createResult.isOk) {
+          // Show success message
+          document.getElementById('challengeForm').style.display = 'none';
+          document.getElementById('challengeSuccess').style.display = 'block';
+          showToast('✅ Reflexão salva com sucesso!');
+          
+          // Unlock a special medal
+          unlockMedal('thinker');
+          
+          // Scroll to success message
+          document.getElementById('challengeSuccess').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+          showToast('⚠️ Erro ao salvar reflexão. Tente novamente.');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Enviar Reflexão 🚀';
+        }
+      } else {
+        showToast('⚠️ Sistema de dados não dispon����vel');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Enviar Reflexão 🚀';
+      }
+    }
+
+    // Show Toast Notification
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+
+    // Initialize on load
+    initializeApp();
+  </script>
+  <style>
+    @keyframes blink4 { 0%,49%{opacity:1} 50%,100%{opacity:0} }
+    .g1-opt-btn {
+      border: 2px solid #8B4513;
+      background: white;
+      color: #4a2c0a;
+      padding: 10px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: background .15s, color .15s;
+      text-align: left;
+      width: 100%;
+    }
+    .g1-opt-btn:hover { background: #8B4513; color: white; }
+    .g1-opt-btn.g1-correct { background: #2d7a4f; color: white; border-color: #2d7a4f; }
+    .g1-opt-btn.g1-wrong   { background: #c44b2a; color: white; border-color: #c44b2a; }
+    .g2-tech-card {
+      border: 2px solid #8B4513;
+      background: white;
+      color: #4a2c0a;
+      padding: 9px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: background .15s, color .15s;
+    }
+    .g2-tech-card:hover { background: #FFF8DC; }
+    .g2-tech-card.g2-selected { background: #8B4513; color: #FFD700; }
+    .g2-tech-card.g2-used { opacity: .4; pointer-events: none; }
+    @media (max-width: 500px) {
+      #g1-options { grid-template-columns: 1fr !important; }
+      #g2-drop-areas { grid-template-columns: 1fr !important; }
+    }
+  </style>
+  <script>
+  // ═══════════════════════════════════════
+  // JOGO 1 — Fábricas do Mundo (Módulo 3)
+  // ═══════════════════════════════════════
+  const g1Questions = [
+    { q: "Qual país criou a linha de montagem e popularizou o automóvel no início do séc. XX?",
+      opts: ["Grã-Bretanha","Estados Unidos","Alemanha","França"],
+      correct: 1,
+      feedback: "✅ Correto! Henry Ford implantou a linha de montagem em Detroit (EUA) em 1913, tornando o automóvel acessível e criando o modelo fordista de produção em massa.",
+      factory: {x:"20%",y:"32%"} },
+    { q: "A 2ª Revolução Industrial foi marcada pelo surgimento de qual nova fonte de energia?",
+      opts: ["Carvão mineral","Energia solar","Eletricidade","Energia eólica"],
+      correct: 2,
+      feedback: "✅ Correto! A eletricidade transformou a produção industrial, iluminou as cidades e permitiu o trabalho noturno. Thomas Edison inaugurou a 1ª usina elétrica em Nova York em 1882.",
+      factory: {x:"48%",y:"18%"} },
+    { q: "O Imperialismo do fim do séc. XIX está diretamente ligado à 2ª Revolução Industrial porque:",
+      opts: ["As potências precisavam exportar emigrantes","Necessitavam de matérias-primas e mercados consumidores","As colônias financiavam a indústria europeia","Os países africanos eram mais industrializados"],
+      correct: 1,
+      feedback: "✅ Correto! A industrialização gerou enorme demanda por matérias-primas (borracha, cobre, petróleo) e mercados consumidores, impulsionando a corrida imperialista pela África e Ásia.",
+      factory: {x:"45%",y:"44%"} },
+    { q: "Qual país asiático foi o primeiro a se industrializar no fim do séc. XIX?",
+      opts: ["China","Índia","Japão","Coreia"],
+      correct: 2,
+      feedback: "✅ Correto! O Japão, após a Restauração Meiji (1868), industrializou-se rapidamente copiando e adaptando tecnologias ocidentais, tornando-se a 1ª potência industrial asiática.",
+      factory: {x:"78%",y:"26%"} },
+    { q: "O fordismo, modelo da 2ª Revolução Industrial, caracteriza-se por:",
+      opts: ["Produção artesanal e personalizada","Produção em série, linha de montagem e trabalho especializado","Produção digital automatizada por robôs","Produção agrícola mecanizada"],
+      correct: 1,
+      feedback: "✅ Correto! O fordismo implantou a produção em série com tarefas simples e repetitivas, barateando produtos e transformando o consumo de massas.",
+      factory: {x:"26%",y:"55%"} },
+    { q: "A 'divisão internacional do trabalho' criada na 2ª Revolução Industrial significa:",
+      opts: ["Trabalhadores de vários países dividindo os mesmos empregos","Países industrializados manufaturando e periféricos fornecendo matéria-prima","Divisão entre trabalhadores manuais e intelectuais","Acordo entre sindicatos internacionais"],
+      correct: 1,
+      feedback: "✅ Correto! A DIT criou uma hierarquia: países industrializados (centro) produziam manufaturados; países periféricos forneciam matérias-primas e mão de obra barata.",
+      factory: {x:"60%",y:"65%"} },
+    { q: "Qual setor industrial foi mais desenvolvido pela Alemanha na 2ª Revolução Industrial?",
+      opts: ["Têxtil","Cerâmica e vidro","Indústria química e elétrica","Construção civil"],
+      correct: 2,
+      feedback: "✅ Correto! A Alemanha liderou a indústria química (corantes, fertilizantes, explosivos) e elétrica (Siemens, AEG), superando a Grã-Bretanha nesses setores.",
+      factory: {x:"50%",y:"15%"} },
+    { q: "O Brasil na 2ª Revolução Industrial atuava principalmente como:",
+      opts: ["País industrializado exportador de manufaturados","Exportador de matérias-primas (café, borracha) e importador de manufaturados","Centro financeiro internacional","Potência militar competindo com EUA e Europa"],
+      correct: 1,
+      feedback: "✅ Correto! O Brasil era um país periférico: exportava produtos primários (café, borracha, açúcar) e importava industrializados da Europa, reforçando a dependência econômica.",
+      factory: {x:"24%",y:"60%"} }
+  ];
+
+  let g1Cur = 0, g1Score = 0, g1Lives = 3, g1Done = false;
+  const g1Emojis = ["🏭","⚙️","🔧","🏗️","🔩","⛏️","🚂","💡"];
+
+  function g1Init() {
+    g1Cur = 0; g1Score = 0; g1Lives = 3; g1Done = false;
+    document.getElementById('g1-score').textContent = 0;
+    document.getElementById('g1-lives').textContent = 3;
+    document.getElementById('g1-result').style.display = 'none';
+    document.getElementById('g1-qpanel').style.display = '';
+    document.getElementById('g1-factories').innerHTML = '';
+    document.getElementById('g1-map-hint').style.display = '';
+    g1Show();
+  }
+
+  function g1Show() {
+    if (g1Cur >= g1Questions.length) { g1End(); return; }
+    const q = g1Questions[g1Cur];
+    document.getElementById('g1-progress').textContent = `Pergunta ${g1Cur+1} de ${g1Questions.length}`;
+    document.getElementById('g1-qtext').textContent = q.q;
+    const opts = document.getElementById('g1-options');
+    opts.innerHTML = '';
+    q.opts.forEach((o,i) => {
+      const b = document.createElement('button');
+      b.className = 'g1-opt-btn';
+      b.textContent = o;
+      b.onclick = () => g1Answer(i, b);
+      opts.appendChild(b);
+    });
+    const fb = document.getElementById('g1-feedback');
+    fb.style.display = 'none';
+    document.getElementById('g1-next').style.display = 'none';
+    g1Done = false;
+  }
+
+  function g1Answer(idx, btn) {
+    if (g1Done) return;
+    g1Done = true;
+    const q = g1Questions[g1Cur];
+    const allBtns = document.querySelectorAll('.g1-opt-btn');
+    const fb = document.getElementById('g1-feedback');
+    if (idx === q.correct) {
+      btn.classList.add('g1-correct');
+      fb.style.cssText = 'display:block;background:#e8f5e9;color:#1a3a1a;border:1px solid #a5d6a7;margin-top:14px;padding:12px 16px;border-radius:8px;font-size:14px;line-height:1.5;';
+      fb.textContent = q.feedback;
+      g1Score++;
+      document.getElementById('g1-score').textContent = g1Score;
+      g1AddFactory(q.factory);
+      document.getElementById('g1-map-hint').style.display = 'none';
+    } else {
+      btn.classList.add('g1-wrong');
+      allBtns[q.correct].classList.add('g1-correct');
+      g1Lives--;
+      document.getElementById('g1-lives').textContent = g1Lives;
+      fb.style.cssText = 'display:block;background:#fde8e4;color:#c44b2a;border:1px solid #ffab91;margin-top:14px;padding:12px 16px;border-radius:8px;font-size:14px;line-height:1.5;';
+      fb.textContent = '❌ Incorreto. ' + q.feedback;
+    }
+    document.getElementById('g1-next').style.display = 'inline-block';
+  }
+
+  function g1AddFactory(pos) {
+    const d = document.getElementById('g1-factories');
+    const f = document.createElement('div');
+    f.style.cssText = `position:absolute;font-size:1.6rem;left:${pos.x};top:${pos.y};transition:all .4s;`;
+    f.textContent = g1Emojis[g1Score % g1Emojis.length];
+    d.appendChild(f);
+  }
+
+  function g1Next() { g1Cur++; g1Show(); }
+
+  function g1End() {
+    document.getElementById('g1-qpanel').style.display = 'none';
+    document.getElementById('g1-result').style.display = 'block';
+    document.getElementById('g1-final-score').textContent = g1Score;
+    const p = g1Score / g1Questions.length;
+    let r, m;
+    if (p >= .875) { r = '🏆 Magnata Industrial!'; m = 'Excelente! Você domina a industrialização do Séc. XX e seus impactos geográficos.'; }
+    else if (p >= .625) { r = '⚙️ Empresário em Ascensão!'; m = 'Bom trabalho! Revise os pontos em que errou e tente novamente.'; }
+    else if (p >= .375) { r = '🔧 Aprendiz Industrial'; m = 'Continue estudando! Releia o conteúdo e tente de novo.'; }
+    else { r = '📚 Retome os estudos'; m = 'Não desanime! Revise o material e jogue novamente — aprender é um processo!'; }
+    document.getElementById('g1-rating').textContent = r;
+    document.getElementById('g1-msg').textContent = m;
+    document.getElementById('m3Points').textContent = g1Score * 20;
+    document.getElementById('m3Factories').textContent = g1Score;
+  }
+
+  // ═══════════════════════════════════════
+  // JOGO 2 — Conecta Futuro (Módulo 4)
+  // ═══════════════════════════════════════
+  const g2Rounds = [
+    { title: "Classifique: Físico, Digital ou Biológico?",
+      instructions: "Segundo Schwab, a 4ª Rev. Industrial atua em 3 pilares. Selecione cada tecnologia e clique na categoria correta:",
+      items: [{name:"🤖 Robôs autônomos",cat:"Físico"},{name:"🧬 Edição genética CRISPR",cat:"Biológico"},{name:"☁️ Computação em nuvem",cat:"Digital"}],
+      cats: ["Físico","Digital","Biológico"],
+      feedback: "Robôs autônomos → pilar Físico (sistemas ciberfísicos); CRISPR → pilar Biológico (biotecnologia); Computação em nuvem → pilar Digital." },
+    { title: "Verdade ou Mito? Escolha a afirmação CORRETA:",
+      instructions: "Selecione cada afirmação e classifique-a:",
+      items: [{name:"A IA vai eliminar todos os empregos",cat:"Mito"},{name:"A 4ª Rev. transforma estruturalmente o trabalho",cat:"Verdade"},{name:"Todos os países se beneficiarão igualmente",cat:"Mito"}],
+      cats: ["Verdade","Mito","Discutível"],
+      feedback: "A IA não eliminará todos os empregos (mito), mas transformará profundamente o mercado de trabalho (verdade). A distribuição desigual é real — países sem acesso à tecnologia aprofundam a dependência." },
+    { title: "Conecte a tecnologia ao seu setor de impacto:",
+      instructions: "Qual é o principal setor de impacto de cada tecnologia?",
+      items: [{name:"🏥 Biossensores e IA médica",cat:"Saúde"},{name:"🚗 Veículos autônomos",cat:"Transporte"},{name:"📱 Cidades inteligentes (IoT urbano)",cat:"Urbanismo"}],
+      cats: ["Saúde","Transporte","Urbanismo"],
+      feedback: "Biossensores e IA médica → Saúde; veículos autônomos → Transporte; IoT urbana → Urbanismo. São os três grandes vetores de transformação territorial da Indústria 4.0." },
+    { title: "Geopolítica: identifique os líderes da 4ª Revolução",
+      instructions: "Relacione cada player global ao seu destaque na Indústria 4.0:",
+      items: [{name:"🇺🇸 OpenAI, Google, Meta",cat:"EUA"},{name:"🇩🇪 Automação industrial Siemens",cat:"Alemanha"},{name:"🇨🇳 Baidu, Alibaba, Huawei",cat:"China"}],
+      cats: ["EUA","Alemanha","China"],
+      feedback: "EUA lideram em IA de propósito geral; a Alemanha é referência em automação industrial (o próprio termo Indústria 4.0 é alemão!); a China avança com IA nacional e domínio de chips e telecomunicações." },
+    { title: "Impactos: Positivo, Negativo ou Ambíguo?",
+      instructions: "Classifique os impactos da 4ª Revolução para o Sul Global:",
+      items: [{name:"Acesso a serviços via smartphones",cat:"Positivo"},{name:"Automação substitui empregos industriais",cat:"Negativo"},{name:"Dados pessoais como nova matéria-prima",cat:"Ambíguo"}],
+      cats: ["Positivo","Negativo","Ambíguo"],
+      feedback: "Acesso digital é positivo, mas desigual; automação industrial é negativa para quem ainda precisa de empregos industriais; dados pessoais são ambíguos — geram valor ou exploração conforme quem os controla." },
+    { title: "Brasil na 4ª Revolução: pontos fortes e desafios",
+      instructions: "Classifique cada elemento brasileiro:",
+      items: [{name:"🌾 Agro tecnológico (AgTech)",cat:"Ponto forte"},{name:"💸 Baixo investimento em P&D",cat:"Desafio"},{name:"🏙️ Startups e fintechs (Nubank etc)",cat:"Ponto forte"}],
+      cats: ["Ponto forte","Desafio","Neutro"],
+      feedback: "O Brasil tem pontos fortes em AgTech e fintechs (maior ecossistema da América Latina). Mas enfrenta desafios sérios: investimento em P&D ≈1% do PIB, infraestrutura digital desigual e exclusão digital." }
+  ];
+
+  let g2Round = 0, g2Score = 0, g2Combo = 1, g2Sel = {}, g2SelCard = null;
+
+  function g2Init() {
+    g2Round = 0; g2Score = 0; g2Combo = 1; g2Sel = {}; g2SelCard = null;
+    document.getElementById('g2-score').textContent = 0;
+    document.getElementById('g2-combo-display').textContent = 'x1';
+    document.getElementById('g2-result').style.display = 'none';
+    document.getElementById('g2-challenge-panel').style.display = '';
+    document.getElementById('g2-terminal').innerHTML = `<span style="color:#FFD700;">[CIDADE INTELIGENTE 4.0]</span><br><span style="color:#e8c97a;">&gt; Sistema reiniciado. Classifique as tecnologias para construir sua cidade!</span><br><span style="animation:blink4 1s infinite;color:#D2691E;">_</span>`;
+    g2Show();
+  }
+
+  function g2Show() {
+    if (g2Round >= g2Rounds.length) { g2End(); return; }
+    const r = g2Rounds[g2Round];
+    g2Sel = {}; g2SelCard = null;
+    document.getElementById('g2-progress').textContent = `Rodada ${g2Round+1} de ${g2Rounds.length}`;
+    document.getElementById('g2-q-title').textContent = r.title;
+    document.getElementById('g2-instructions').textContent = r.instructions;
+    document.getElementById('g2-feedback').style.display = 'none';
+    document.getElementById('g2-next-btn').style.display = 'none';
+
+    // Tech cards
+    const area = document.getElementById('g2-cards-area');
+    area.innerHTML = '';
+    r.items.forEach((item, i) => {
+      const c = document.createElement('div');
+      c.className = 'g2-tech-card';
+      c.id = `g2c${i}`;
+      c.textContent = item.name;
+      c.onclick = () => g2SelectCard(i, c);
+      area.appendChild(c);
+    });
+
+    // Drop zones
+    const drops = document.getElementById('g2-drop-areas');
+    drops.innerHTML = '';
+    r.cats.forEach((cat, ci) => {
+      const z = document.createElement('div');
+      z.id = `g2z${ci}`;
+      z.style.cssText = 'background:#FFF8DC;border:2px dashed #D2691E;border-radius:8px;padding:10px;min-height:64px;cursor:pointer;';
+      z.innerHTML = `<div style="font-size:11px;font-weight:700;color:#8B4513;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">${cat}</div><div id="g2ph${ci}" style="font-size:12px;color:#D2691E;font-style:italic;">— clique aqui —</div>`;
+      z.onclick = () => g2Drop(ci, cat);
+      drops.appendChild(z);
+    });
+  }
+
+  function g2SelectCard(idx, el) {
+    if (el.classList.contains('g2-used')) return;
+    document.querySelectorAll('.g2-tech-card').forEach(c => c.classList.remove('g2-selected'));
+    if (g2SelCard && g2SelCard.idx === idx) { g2SelCard = null; return; }
+    el.classList.add('g2-selected');
+    g2SelCard = { idx, el, item: g2Rounds[g2Round].items[idx] };
+  }
+
+  function g2Drop(ci, cat) {
+    if (!g2SelCard) return;
+    const { idx, el, item } = g2SelCard;
+    // Remove previous if same card already placed
+    Object.keys(g2Sel).forEach(k => {
+      if (g2Sel[k] && g2Sel[k].idx === idx) {
+        const prev = document.getElementById(`g2z${k}`);
+        const chip = prev.querySelector(`[data-ci="${idx}"]`);
+        if (chip) chip.remove();
+        document.getElementById(`g2ph${k}`).style.display = '';
+        delete g2Sel[k];
+      }
+    });
+    // Place chip
+    const zone = document.getElementById(`g2z${ci}`);
+    document.getElementById(`g2ph${ci}`).style.display = 'none';
+    const chip = document.createElement('div');
+    chip.setAttribute('data-ci', idx);
+    chip.style.cssText = 'background:#8B4513;color:#FFD700;padding:4px 10px;border-radius:4px;font-size:12px;font-weight:600;margin-top:4px;cursor:pointer;display:inline-block;';
+    chip.textContent = item.name;
+    chip.onclick = (e) => { e.stopPropagation(); chip.remove(); el.classList.remove('g2-used'); delete g2Sel[ci]; document.getElementById(`g2ph${ci}`).style.display = ''; };
+    zone.appendChild(chip);
+    el.classList.remove('g2-selected');
+    el.classList.add('g2-used');
+    g2Sel[ci] = { idx, cat };
+    g2SelCard = null;
+  }
+
+  function g2Check() {
+    const r = g2Rounds[g2Round];
+    if (Object.keys(g2Sel).length < r.items.length) {
+      const fb = document.getElementById('g2-feedback');
+      fb.style.cssText = 'display:block;background:#fde8e4;color:#c44b2a;border:1px solid #ffab91;margin-top:14px;padding:12px 16px;border-radius:8px;font-size:14px;';
+      fb.textContent = '⚠️ Classifique todas as tecnologias antes de verificar!';
+      return;
+    }
+    let correct = 0;
+    r.cats.forEach((cat, ci) => {
+      if (!g2Sel[ci]) return;
+      const placed = r.items[g2Sel[ci].idx];
+      if (placed && placed.cat === cat) correct++;
+    });
+    const fb = document.getElementById('g2-feedback');
+    if (correct === r.items.length) {
+      fb.style.cssText = 'display:block;background:#e8f5e9;color:#1a3a1a;border:1px solid #a5d6a7;margin-top:14px;padding:12px 16px;border-radius:8px;font-size:14px;line-height:1.5;';
+      fb.textContent = '✅ Perfeito! ' + r.feedback;
+      const pts = 100 * g2Combo;
+      g2Score += pts;
+      g2Combo = Math.min(g2Combo + 1, 5);
+      document.getElementById('g2-score').textContent = g2Score;
+      document.getElementById('g2-combo-display').textContent = `x${g2Combo}`;
+      document.getElementById('m4Points').textContent = g2Score;
+      document.getElementById('m4Combo').textContent = `x${g2Combo}`;
+      const term = document.getElementById('g2-terminal');
+      term.innerHTML += `<br><span style="color:#7ee87e;">&gt; MÓDULO ${g2Round+1} INSTALADO ✓ +${pts} pontos</span><br><span style="animation:blink4 1s infinite;color:#D2691E;">_</span>`;
+    } else {
+      fb.style.cssText = 'display:block;background:#fde8e4;color:#c44b2a;border:1px solid #ffab91;margin-top:14px;padding:12px 16px;border-radius:8px;font-size:14px;line-height:1.5;';
+      fb.textContent = `❌ ${correct}/${r.items.length} corretos. ${r.feedback}`;
+      g2Combo = 1;
+      document.getElementById('g2-combo-display').textContent = 'x1';
+      document.getElementById('m4Combo').textContent = 'x1';
+      const term = document.getElementById('g2-terminal');
+      term.innerHTML += `<br><span style="color:#ff8c4a;">&gt; ERRO: ${r.items.length-correct} classificação(ões) incorreta(s).</span><br><span style="animation:blink4 1s infinite;color:#D2691E;">_</span>`;
+    }
+    document.getElementById('g2-next-btn').style.display = 'inline-block';
+  }
+
+  function g2Next() { g2Round++; g2Show(); }
+
+  function g2End() {
+    document.getElementById('g2-challenge-panel').style.display = 'none';
+    document.getElementById('g2-result').style.display = 'block';
+    document.getElementById('g2-final-score').textContent = g2Score;
+    let r, m;
+    if (g2Score >= 500) { r = '🏆 Arquiteto(a) do Futuro!'; m = 'Você compreende profundamente a 4ª Revolução Industrial e seus impactos geográficos e sociais. Excelente!'; }
+    else if (g2Score >= 300) { r = '💡 Inovador(a) Digital!'; m = 'Bom trabalho! Você entende a maior parte dos conceitos. Releia os pontos em que teve dificuldade.'; }
+    else if (g2Score >= 100) { r = '📱 Aprendiz Conectado(a)'; m = 'Continue estudando! Releia a seção da 4ª Revolução Industrial e tente de novo.'; }
+    else { r = '📚 Reinicie o sistema'; m = 'Não desanime! Revise o conteúdo sobre Indústria 4.0 e tente novamente.'; }
+    document.getElementById('g2-rating').textContent = r;
+    document.getElementById('g2-msg').textContent = m;
+  }
+
+  // Auto-init when pages open (hook into existing openModule)
+  const _origOpen = openModule;
+  openModule = function(moduleId) {
+    _origOpen(moduleId);
+    if (moduleId === 'module3') { setTimeout(g1Init, 100); showToast('🏭 Jogo Fábricas do Mundo iniciado!'); }
+    if (moduleId === 'module4') { setTimeout(g2Init, 100); showToast('🤖 Jogo Conecta Futuro iniciado!'); }
+  };
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9e208d6416ddcb16',t:'MTc3NDQ2OTM1Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
